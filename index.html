@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Range Extension Probability Model</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e17;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:16px;min-height:100vh}
+.container{max-width:900px;margin:0 auto}
+h1.title{font-size:1.1rem;color:#8892a4;margin-bottom:12px;letter-spacing:0.5px}
+.title-input{background:transparent;border:none;color:#fff;font-size:1.6rem;font-weight:700;width:100%;outline:none;padding:4px 0;margin-bottom:16px;border-bottom:1px solid transparent}
+.title-input:hover,.title-input:focus{border-bottom:1px solid #2a3a5c}
+.card{background:#111827;border:1px solid #1e293b;border-radius:12px;padding:20px;margin-bottom:16px}
+.card-title{font-size:.85rem;color:#8892a4;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;font-weight:600}
+.row{display:flex;gap:16px;flex-wrap:wrap}
+.col{flex:1;min-width:200px}
+textarea{width:100%;background:#0a0e17;border:1px solid #1e293b;border-radius:8px;color:#e0e0e0;padding:12px;font-family:monospace;font-size:.9rem;resize:vertical;min-height:120px;outline:none}
+textarea:focus{border-color:#3b82f6}
+label{display:block;font-size:.8rem;color:#8892a4;margin-bottom:6px;font-weight:500}
+input[type="number"],input[type="text"],select{width:100%;background:#0a0e17;border:1px solid #1e293b;border-radius:8px;color:#e0e0e0;padding:10px 12px;font-size:1rem;outline:none}
+input:focus,select:focus{border-color:#3b82f6}
+.btn{background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:.9rem;cursor:pointer;font-weight:600;transition:background .2s}
+.btn:hover{background:#2563eb}
+.btn-sm{padding:6px 14px;font-size:.8rem}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+.stat-box{background:#0a0e17;border:1px solid #1e293b;border-radius:8px;padding:14px;text-align:center}
+.stat-value{font-size:1.5rem;font-weight:700;color:#fff}
+.stat-label{font-size:.7rem;color:#8892a4;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+.stat-value.green{color:#22c55e}
+.stat-value.red{color:#ef4444}
+.stat-value.blue{color:#3b82f6}
+.stat-value.amber{color:#f59e0b}
+.verdict-box{text-align:center;padding:20px;border-radius:10px;margin-top:8px}
+.verdict-box h2{font-size:1.8rem;font-weight:800;margin-bottom:4px}
+.verdict-box p{font-size:.9rem;opacity:.8}
+.verdict-extend{background:linear-gradient(135deg,rgba(34,197,94,.12),rgba(34,197,94,.04));border:1px solid rgba(34,197,94,.3)}
+.verdict-extend h2{color:#22c55e}
+.verdict-capped{background:linear-gradient(135deg,rgba(239,68,68,.12),rgba(239,68,68,.04));border:1px solid rgba(239,68,68,.3)}
+.verdict-capped h2{color:#ef4444}
+.verdict-neutral{background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(245,158,11,.04));border:1px solid rgba(245,158,11,.3)}
+.verdict-neutral h2{color:#f59e0b}
+canvas{width:100%;border-radius:8px;margin-top:8px}
+.insight-list{list-style:none;padding:0}
+.insight-list li{padding:8px 12px;border-left:3px solid #3b82f6;margin-bottom:8px;background:rgba(59,130,246,.05);border-radius:0 6px 6px 0;font-size:.9rem;line-height:1.4}
+.insight-list li.bullish{border-left-color:#22c55e;background:rgba(34,197,94,.05)}
+.insight-list li.bearish{border-left-color:#ef4444;background:rgba(239,68,68,.05)}
+.zone-bar{height:32px;border-radius:6px;overflow:hidden;display:flex;margin:8px 0}
+.zone-bar div{display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:#fff;transition:width .3s}
+.marker-row{position:relative;height:20px;margin-bottom:4px}
+.marker{position:absolute;transform:translateX(-50%);font-size:.7rem;font-weight:700;color:#fff}
+.marker::after{content:'';display:block;width:2px;height:10px;background:#fff;margin:2px auto 0}
+.hidden{display:none}
+.preset-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.chip{background:#1e293b;border:1px solid #2a3a5c;border-radius:20px;padding:4px 12px;font-size:.75rem;color:#8892a4;cursor:pointer;transition:all .2s}
+.chip:hover,.chip.active{background:#3b82f6;color:#fff;border-color:#3b82f6}
+@media(max-width:600px){.stats-grid{grid-template-columns:repeat(2,1fr)}.row{flex-direction:column}.stat-value{font-size:1.2rem}}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1 class="title">RANGE EXTENSION PROBABILITY MODEL</h1>
+  <input type="text" class="title-input" id="modelTitle" value="AUS200 Intraday Range Analysis" spellcheck="false">
+
+  <!-- INPUT CARD -->
+  <div class="card">
+    <div class="card-title">Data Input</div>
+    <div class="preset-chips" id="presetChips">
+      <span class="chip" data-market="custom">Custom</span>
+      <span class="chip active" data-market="AUS200">AUS200</span>
+      <span class="chip" data-market="UK100">UK100</span>
+      <span class="chip" data-market="US500">US500</span>
+      <span class="chip" data-market="NAS100">NAS100</span>
+    </div>
+    <div class="row">
+      <div class="col">
+        <label>Historical Range Distribution (paste numbers)</label>
+        <textarea id="dataInput" placeholder="Paste range values separated by commas, spaces, tabs, or newlines">31
+35
+40
+49
+69
+72
+75
+75
+78
+108
+156
+165
+236</textarea>
+      </div>
+      <div class="col" style="max-width:260px">
+        <label>Current Intraday Range</label>
+        <input type="number" id="currentRange" value="43" step="0.1">
+        <div style="margin-top:12px">
+          <label>Session Progress (optional)</label>
+          <select id="sessionProgress">
+            <option value="">Not specified</option>
+            <option value="0.25">First Quarter (0-25%)</option>
+            <option value="0.5">First Half (25-50%)</option>
+            <option value="0.75">Third Quarter (50-75%)</option>
+            <option value="0.9">Final Stretch (75-100%)</option>
+          </select>
+        </div>
+        <button class="btn" style="margin-top:14px;width:100%" onclick="analyse()">Analyse Range</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VERDICT -->
+  <div class="card hidden" id="verdictCard">
+    <div id="verdictBox" class="verdict-box"></div>
+  </div>
+
+  <!-- KEY STATS -->
+  <div class="card hidden" id="statsCard">
+    <div class="card-title">Distribution Statistics</div>
+    <div class="stats-grid" id="statsGrid"></div>
+  </div>
+
+  <!-- EXTENSION METRICS -->
+  <div class="card hidden" id="extensionCard">
+    <div class="card-title">Range Extension Metrics</div>
+    <div class="stats-grid" id="extensionGrid"></div>
+  </div>
+
+  <!-- ZONE BAR -->
+  <div class="card hidden" id="zoneCard">
+    <div class="card-title">Current Range Position</div>
+    <div class="marker-row" id="markerRow"></div>
+    <div class="zone-bar" id="zoneBar"></div>
+    <div style="display:flex;justify-content:space-between;font-size:.7rem;color:#8892a4;margin-top:4px">
+      <span id="zoneMin"></span><span id="zoneMax"></span>
+    </div>
+  </div>
+
+  <!-- HISTOGRAM -->
+  <div class="card hidden" id="histCard">
+    <div class="card-title">Range Distribution Histogram</div>
+    <canvas id="histCanvas" height="280"></canvas>
+  </div>
+
+  <!-- INSIGHTS -->
+  <div class="card hidden" id="insightCard">
+    <div class="card-title">Key Insights</div>
+    <ul class="insight-list" id="insightList"></ul>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const show = id => $(id).classList.remove('hidden');
+
+// Preset market data store
+const presetData = {};
+let activeMarket = 'AUS200';
+
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    const m = chip.dataset.market;
+    // Save current data before switching
+    presetData[activeMarket] = $('dataInput').value;
+    activeMarket = m;
+    if (presetData[m]) $('dataInput').value = presetData[m];
+    else if (m === 'custom') $('dataInput').value = '';
+  });
+});
+
+function parseData(raw) {
+  return raw.split(/[\s,;\t]+/).map(s => parseFloat(s.trim())).filter(n => !isNaN(n) && n > 0);
+}
+
+function percentile(arr, p) {
+  const sorted = [...arr].sort((a,b) => a - b);
+  const idx = (p / 100) * (sorted.length - 1);
+  const lo = Math.floor(idx), hi = Math.ceil(idx);
+  return lo === hi ? sorted[lo] : sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+}
+
+function analyse() {
+  const data = parseData($('dataInput').value);
+  if (data.length < 3) { alert('Need at least 3 data points'); return; }
+  const current = parseFloat($('currentRange').value);
+  if (isNaN(current) || current <= 0) { alert('Enter a valid current range'); return; }
+
+  const sorted = [...data].sort((a, b) => a - b);
+  const n = data.length;
+  const mean = data.reduce((a, b) => a + b, 0) / n;
+  const median = percentile(data, 50);
+  const stdDev = Math.sqrt(data.reduce((s, v) => s + (v - mean) ** 2, 0) / n);
+  const min = sorted[0], max = sorted[n - 1];
+  const p25 = percentile(data, 25);
+  const p75 = percentile(data, 75);
+
+  // Extension metrics
+  const aboveCurrent = data.filter(v => v > current).length;
+  const pctExtension = (aboveCurrent / n) * 100;
+
+  // Days at or below current
+  const atOrBelow = data.filter(v => v <= current).length;
+  const pctAtOrBelow = (atOrBelow / n) * 100;
+
+  // Current percentile rank
+  const belowCount = data.filter(v => v < current).length;
+  const equalCount = data.filter(v => v === current).length;
+  const pctRank = ((belowCount + 0.5 * equalCount) / n) * 100;
+
+  // Ratio to mean/median
+  const ratioToMean = current / mean;
+  const ratioToMedian = current / median;
+
+  // Below mean analysis
+  const belowMean = current < mean;
+  const belowMedian = current < median;
+
+  // When current is below mean, how often does range extend?
+  const belowMeanDays = data.filter(v => v < mean);
+  const belowMeanExtend = belowMeanDays.filter(v => v > current).length;
+  const pctBelowMeanExtend = belowMeanDays.length > 0 ? (belowMeanExtend / belowMeanDays.length) * 100 : 0;
+
+  // When current is above mean
+  const aboveMeanDays = data.filter(v => v >= mean);
+  const aboveMeanExtend = aboveMeanDays.filter(v => v > current).length;
+  const pctAboveMeanExtend = aboveMeanDays.length > 0 ? (aboveMeanExtend / aboveMeanDays.length) * 100 : 0;
+
+  // Distance metrics
+  const distToMean = current - mean;
+  const distToMedian = current - median;
+  const zScore = stdDev > 0 ? distToMean / stdDev : 0;
+
+  // Expected remaining range if extension happens
+  const extendingDays = data.filter(v => v > current);
+  const avgExtension = extendingDays.length > 0 ? extendingDays.reduce((a,b) => a + b, 0) / extendingDays.length - current : 0;
+  const medianExtension = extendingDays.length > 0 ? percentile(extendingDays, 50) - current : 0;
+
+  // Show cards
+  ['verdictCard','statsCard','extensionCard','zoneCard','histCard','insightCard'].forEach(show);
+
+  // VERDICT
+  let verdictClass, verdictTitle, verdictSub;
+  if (pctExtension >= 70) {
+    verdictClass = 'verdict-extend';
+    verdictTitle = `${pctExtension.toFixed(0)}% — High Extension Probability`;
+    verdictSub = `Range is in the ${pctRank.toFixed(0)}th percentile. Strong historical basis for further extension.`;
+  } else if (pctExtension >= 45) {
+    verdictClass = 'verdict-neutral';
+    verdictTitle = `${pctExtension.toFixed(0)}% — Moderate Extension`;
+    verdictSub = `Range is near the middle of the distribution. Extension possible but not dominant.`;
+  } else {
+    verdictClass = 'verdict-capped';
+    verdictTitle = `${pctExtension.toFixed(0)}% — Range Likely Capped`;
+    verdictSub = `Current range is already in the ${pctRank.toFixed(0)}th percentile. Most days finish with less range.`;
+  }
+  $('verdictBox').className = 'verdict-box ' + verdictClass;
+  $('verdictBox').innerHTML = `<h2>${verdictTitle}</h2><p>${verdictSub}</p>`;
+
+  // DISTRIBUTION STATS
+  $('statsGrid').innerHTML = [
+    stat(n, 'Sample Size', 'blue'),
+    stat(mean.toFixed(1), 'Mean Range', 'blue'),
+    stat(median.toFixed(1), 'Median Range', 'blue'),
+    stat(stdDev.toFixed(1), 'Std Dev', 'blue'),
+    stat(min, 'Min', ''),
+    stat(max, 'Max', ''),
+    stat(p25.toFixed(1), '25th Pctl', ''),
+    stat(p75.toFixed(1), '75th Pctl', ''),
+  ].join('');
+
+  // EXTENSION STATS
+  $('extensionGrid').innerHTML = [
+    stat(pctExtension.toFixed(1) + '%', 'Days > Current', pctExtension >= 50 ? 'green' : 'red'),
+    stat(pctRank.toFixed(1) + '%', 'Percentile Rank', pctRank <= 50 ? 'green' : 'amber'),
+    stat((zScore >= 0 ? '+' : '') + zScore.toFixed(2), 'Z-Score', Math.abs(zScore) < 1 ? 'green' : 'amber'),
+    stat((ratioToMean * 100).toFixed(0) + '%', 'of Mean', ratioToMean < 1 ? 'green' : 'red'),
+    stat(avgExtension > 0 ? '+' + avgExtension.toFixed(1) : '—', 'Avg Extension', 'blue'),
+    stat(medianExtension > 0 ? '+' + medianExtension.toFixed(1) : '—', 'Med Extension', 'blue'),
+    stat(belowMean ? pctBelowMeanExtend.toFixed(0) + '%' : pctAboveMeanExtend.toFixed(0) + '%',
+      belowMean ? 'Extend (Below Avg Days)' : 'Extend (Above Avg Days)',
+      (belowMean ? pctBelowMeanExtend : pctAboveMeanExtend) >= 50 ? 'green' : 'red'),
+    stat(extendingDays.length + '/' + n, 'Extending Days', ''),
+  ].join('');
+
+  // ZONE BAR
+  const zones = [
+    { label: 'Low', pct: 25, color: '#22c55e' },
+    { label: 'Below Avg', pct: 25, color: '#84cc16' },
+    { label: 'Above Avg', pct: 25, color: '#f59e0b' },
+    { label: 'High', pct: 25, color: '#ef4444' },
+  ];
+  const range = max - min || 1;
+  const currentPct = Math.max(0, Math.min(100, ((current - min) / range) * 100));
+  const meanPct = ((mean - min) / range) * 100;
+  const medianPct = ((median - min) / range) * 100;
+
+  $('zoneBar').innerHTML = zones.map(z => `<div style="width:${z.pct}%;background:${z.color}">${z.label}</div>`).join('');
+  $('markerRow').innerHTML =
+    `<span class="marker" style="left:${currentPct}%;color:#fff">▼ Current</span>` +
+    `<span class="marker" style="left:${meanPct}%;color:#3b82f6">▼ Mean</span>`;
+  $('zoneMin').textContent = min;
+  $('zoneMax').textContent = max;
+
+  // HISTOGRAM
+  drawHistogram(sorted, current, mean, median);
+
+  // INSIGHTS
+  const insights = [];
+  if (pctExtension >= 70) {
+    insights.push({ t: `<strong>${pctExtension.toFixed(0)}%</strong> of historical sessions finished with a wider range than the current ${current}. Range extension is the dominant outcome.`, c: 'bullish' });
+  } else if (pctExtension >= 50) {
+    insights.push({ t: `A slim majority (<strong>${pctExtension.toFixed(0)}%</strong>) of sessions exceeded the current range. Extension is slightly favored.`, c: 'bullish' });
+  } else {
+    insights.push({ t: `Only <strong>${pctExtension.toFixed(0)}%</strong> of sessions exceeded the current range of ${current}. The range may already be stretched.`, c: 'bearish' });
+  }
+
+  if (belowMean) {
+    insights.push({ t: `Current range is <strong>${Math.abs(distToMean).toFixed(1)} below the mean</strong> (${mean.toFixed(1)}). On below-average days, <strong>${pctBelowMeanExtend.toFixed(0)}%</strong> still finished wider than ${current}.`, c: 'bullish' });
+  } else {
+    insights.push({ t: `Current range is <strong>${distToMean.toFixed(1)} above the mean</strong> (${mean.toFixed(1)}). Historically, only <strong>${pctAboveMeanExtend.toFixed(0)}%</strong> of above-average days extended further.`, c: 'bearish' });
+  }
+
+  if (Math.abs(zScore) < 0.5) {
+    insights.push({ t: `Z-score of ${zScore.toFixed(2)} — current range is well within normal bounds.`, c: '' });
+  } else if (zScore > 1.5) {
+    insights.push({ t: `Z-score of ${zScore.toFixed(2)} — current range is unusually wide. Only extreme outlier days go further.`, c: 'bearish' });
+  } else if (zScore < -0.5) {
+    insights.push({ t: `Z-score of ${zScore.toFixed(2)} — range is still compressed. Plenty of room for extension.`, c: 'bullish' });
+  }
+
+  if (extendingDays.length > 0) {
+    insights.push({ t: `If the range does extend, the average final range is <strong>${(current + avgExtension).toFixed(1)}</strong> (+${avgExtension.toFixed(1)} from current). Median final range of extending days: <strong>${(current + medianExtension).toFixed(1)}</strong>.`, c: '' });
+  }
+
+  if (current <= p25) {
+    insights.push({ t: `Current range is at or below the 25th percentile (<strong>${p25.toFixed(1)}</strong>). This is a low-range session — very high probability of further movement.`, c: 'bullish' });
+  } else if (current >= p75) {
+    insights.push({ t: `Current range has breached the 75th percentile (<strong>${p75.toFixed(1)}</strong>). This is already an above-average session.`, c: 'bearish' });
+  }
+
+  $('insightList').innerHTML = insights.map(i => `<li class="${i.c}">${i.t}</li>`).join('');
+}
+
+function stat(val, label, colorClass) {
+  return `<div class="stat-box"><div class="stat-value ${colorClass}">${val}</div><div class="stat-label">${label}</div></div>`;
+}
+
+function drawHistogram(sorted, current, mean, median) {
+  const canvas = $('histCanvas');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 280 * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = 280;
+
+  ctx.fillStyle = '#0a0e17';
+  ctx.fillRect(0, 0, W, H);
+
+  const min = sorted[0], max = sorted[sorted.length - 1];
+  const range = max - min || 1;
+  const binCount = Math.min(Math.max(Math.ceil(Math.sqrt(sorted.length)), 5), 20);
+  const binWidth = range / binCount;
+  const bins = new Array(binCount).fill(0);
+
+  sorted.forEach(v => {
+    let idx = Math.floor((v - min) / binWidth);
+    if (idx >= binCount) idx = binCount - 1;
+    bins[idx]++;
+  });
+
+  const maxBin = Math.max(...bins);
+  const pad = { l: 40, r: 20, t: 20, b: 40 };
+  const chartW = W - pad.l - pad.r;
+  const chartH = H - pad.t - pad.b;
+  const barW = chartW / binCount;
+
+  // Grid lines
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + chartH - (i / 4) * chartH;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    ctx.fillStyle = '#8892a4';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.round(maxBin * i / 4), pad.l - 6, y + 3);
+  }
+
+  // Bars
+  bins.forEach((count, i) => {
+    const x = pad.l + i * barW;
+    const h = maxBin > 0 ? (count / maxBin) * chartH : 0;
+    const binStart = min + i * binWidth;
+    const binEnd = binStart + binWidth;
+    const isCurrent = current >= binStart && current < binEnd + (i === binCount - 1 ? 1 : 0);
+    ctx.fillStyle = isCurrent ? '#f59e0b' : '#3b82f6';
+    ctx.globalAlpha = isCurrent ? 1 : 0.7;
+    ctx.fillRect(x + 1, pad.t + chartH - h, barW - 2, h);
+    ctx.globalAlpha = 1;
+
+    // X labels
+    if (i % Math.ceil(binCount / 8) === 0 || i === binCount - 1) {
+      ctx.fillStyle = '#8892a4';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(Math.round(binStart), x + barW / 2, H - pad.b + 14);
+    }
+  });
+
+  // Current line
+  const cx = pad.l + ((current - min) / range) * chartW;
+  ctx.strokeStyle = '#f59e0b';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath(); ctx.moveTo(cx, pad.t); ctx.lineTo(cx, pad.t + chartH); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#f59e0b';
+  ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Current: ' + current, cx, pad.t - 4);
+
+  // Mean line
+  const mx = pad.l + ((mean - min) / range) * chartW;
+  ctx.strokeStyle = '#3b82f6';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 3]);
+  ctx.beginPath(); ctx.moveTo(mx, pad.t); ctx.lineTo(mx, pad.t + chartH); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#3b82f6';
+  ctx.fillText('Mean', mx, H - pad.b + 28);
+
+  // Median line
+  const mdx = pad.l + ((median - min) / range) * chartW;
+  ctx.strokeStyle = '#8b5cf6';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(mdx, pad.t); ctx.lineTo(mdx, pad.t + chartH); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#8b5cf6';
+  ctx.fillText('Median', mdx, H - pad.b + 38);
+}
+
+// Auto-run on load
+window.addEventListener('DOMContentLoaded', () => {
+  presetData['AUS200'] = $('dataInput').value;
+  analyse();
+  window.addEventListener('resize', analyse);
+});
+</script>
+</body>
+</html>
