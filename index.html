@@ -79,23 +79,11 @@ canvas{width:100%;border-radius:8px;margin-top:8px}
     <div class="row">
       <div class="col">
         <label>Historical Range Distribution (paste numbers)</label>
-        <textarea id="dataInput" placeholder="Paste range values separated by commas, spaces, tabs, or newlines">31
-35
-40
-49
-69
-72
-75
-75
-78
-108
-156
-165
-236</textarea>
+        <textarea id="dataInput" placeholder="Paste range values separated by commas, spaces, tabs, or newlines"></textarea>
       </div>
       <div class="col" style="max-width:260px">
         <label>Current Intraday Range</label>
-        <input type="number" id="currentRange" value="43" step="0.1">
+        <input type="number" id="currentRange" placeholder="0" step="0.1">
         <div style="margin-top:12px">
           <label>Session Progress (optional)</label>
           <select id="sessionProgress">
@@ -500,11 +488,11 @@ function setupZoneHover() {
   });
 }
 
-// Auto-run on load
+// Resize listener only — no auto-run with empty data
 window.addEventListener('DOMContentLoaded', () => {
-  presetData['AUS200'] = $('dataInput').value;
-  analyse();
-  window.addEventListener('resize', analyse);
+  window.addEventListener('resize', () => {
+    if (window._zoneData) analyse();
+  });
 });
 </script>
 </body>
