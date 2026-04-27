@@ -79,21 +79,38 @@ canvas{width:100%;border-radius:8px;margin-top:8px}
     <div class="row">
       <div class="col">
         <label>Historical Range Distribution (paste numbers)</label>
-        <textarea id="dataInput" placeholder="Paste range values separated by commas, spaces, tabs, or newlines"></textarea>
+        <textarea id="dataInput" placeholder="Paste range values separated by commas, spaces, tabs, or newlines">93
+37
+55
+93
+50
+68
+47
+47
+54
+86
+66
+34
+50
+156
+98
+50
+56
+97
+236
+133
+122
+35
+67
+85
+41
+165
+43
+131</textarea>
       </div>
       <div class="col" style="max-width:260px">
         <label>Current Intraday Range</label>
-        <input type="number" id="currentRange" placeholder="0" step="0.1">
-        <div style="margin-top:12px">
-          <label>Session Progress (optional)</label>
-          <select id="sessionProgress">
-            <option value="">Not specified</option>
-            <option value="0.25">First Quarter (0-25%)</option>
-            <option value="0.5">First Half (25-50%)</option>
-            <option value="0.75">Third Quarter (50-75%)</option>
-            <option value="0.9">Final Stretch (75-100%)</option>
-          </select>
-        </div>
+        <input type="number" id="currentRange" value="41" step="0.1">
         <button class="btn" style="margin-top:14px;width:100%" onclick="analyse()">Analyse Range</button>
       </div>
     </div>
@@ -488,8 +505,10 @@ function setupZoneHover() {
   });
 }
 
-// Resize listener only — no auto-run with empty data
+// Auto-run on load
 window.addEventListener('DOMContentLoaded', () => {
+  presetData['AUS200'] = $('dataInput').value;
+  analyse();
   window.addEventListener('resize', () => {
     if (window._zoneData) analyse();
   });
