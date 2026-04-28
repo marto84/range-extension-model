@@ -178,8 +178,27 @@ document.querySelectorAll('.chip').forEach(chip => {
     activeMarket = m;
     if (presetData[m]) $('dataInput').value = presetData[m];
     else if (m === 'custom') $('dataInput').value = '';
+    saveInputs();
   });
 });
+
+// Persist inputs to localStorage
+function saveInputs() {
+  try {
+    localStorage.setItem('rangeExt.inputs.v1', JSON.stringify({
+      dataInput: $('dataInput').value,
+      intradayRange: $('currentRange').value,
+      activeMarket: activeMarket,
+      presetData: presetData,
+      modelTitle: $('modelTitle').value
+    }));
+  } catch {}
+}
+
+// Listen for input changes
+$('dataInput').addEventListener('input', saveInputs);
+$('currentRange').addEventListener('input', saveInputs);
+$('modelTitle').addEventListener('input', saveInputs);
 
 function parseData(raw) {
   return raw.split(/[\s,;\t]+/).map(s => parseFloat(s.trim())).filter(n => !isNaN(n) && n > 0);
@@ -358,6 +377,7 @@ function analyse() {
   }
 
   $('insightList').innerHTML = insights.map(i => `<li class="${i.c}">${i.t}</li>`).join('');
+  saveInputs();
 }
 
 function stat(val, label, colorClass) {
@@ -507,7 +527,24 @@ function setupZoneHover() {
 
 // Auto-run on load
 window.addEventListener('DOMContentLoaded', () => {
-  presetData['AUS200'] = $('dataInput').value;
+  // Restore from localStorage if available
+  try {
+    const saved = JSON.parse(localStorage.getItem('rangeExt.inputs.v1') || 'null');
+    if (saved) {
+      if (saved.dataInput) $('dataInput').value = saved.dataInput;
+      if (saved.intradayRange) $('currentRange').value = saved.intradayRange;
+      if (saved.modelTitle) $('modelTitle').value = saved.modelTitle;
+      if (saved.presetData) Object.assign(presetData, saved.presetData);
+      if (saved.activeMarket) {
+        activeMarket = saved.activeMarket;
+        document.querySelectorAll('.chip').forEach(c => {
+          c.classList.toggle('active', c.dataset.market === activeMarket);
+        });
+      }
+    }
+  } catch {}
+
+  presetData[activeMarket] = $('dataInput').value;
   analyse();
   window.addEventListener('resize', () => {
     if (window._zoneData) analyse();
