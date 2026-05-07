@@ -8,9 +8,7 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#0a0e17;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:16px;min-height:100vh}
 .container{max-width:900px;margin:0 auto}
-h1.title{font-size:1.1rem;color:#8892a4;margin-bottom:12px;letter-spacing:0.5px}
-.title-input{background:transparent;border:none;color:#fff;font-size:1.6rem;font-weight:700;width:100%;outline:none;padding:4px 0;margin-bottom:16px;border-bottom:1px solid transparent}
-.title-input:hover,.title-input:focus{border-bottom:1px solid #2a3a5c}
+h1.title{font-size:1.1rem;color:#8892a4;margin-bottom:16px;letter-spacing:0.5px}
 .card{background:#111827;border:1px solid #1e293b;border-radius:12px;padding:20px;margin-bottom:16px}
 .card-title{font-size:.85rem;color:#8892a4;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;font-weight:600}
 .row{display:flex;gap:16px;flex-wrap:wrap}
@@ -64,7 +62,6 @@ canvas{width:100%;border-radius:8px;margin-top:8px}
 <body>
 <div class="container">
   <h1 class="title">RANGE EXTENSION PROBABILITY MODEL</h1>
-  <input type="text" class="title-input" id="modelTitle" value="AUS200 Intraday Range Analysis" spellcheck="false">
 
   <!-- INPUT CARD -->
   <div class="card">
@@ -189,8 +186,7 @@ function saveInputs() {
       dataInput: $('dataInput').value,
       intradayRange: $('currentRange').value,
       activeMarket: activeMarket,
-      presetData: presetData,
-      modelTitle: $('modelTitle').value
+      presetData: presetData
     }));
   } catch {}
 }
@@ -198,7 +194,6 @@ function saveInputs() {
 // Listen for input changes
 $('dataInput').addEventListener('input', saveInputs);
 $('currentRange').addEventListener('input', saveInputs);
-$('modelTitle').addEventListener('input', saveInputs);
 
 function parseData(raw) {
   return raw.split(/[\s,;\t]+/).map(s => parseFloat(s.trim())).filter(n => !isNaN(n) && n > 0);
@@ -533,7 +528,6 @@ window.addEventListener('DOMContentLoaded', () => {
     if (saved) {
       if (saved.dataInput) $('dataInput').value = saved.dataInput;
       if (saved.intradayRange) $('currentRange').value = saved.intradayRange;
-      if (saved.modelTitle) $('modelTitle').value = saved.modelTitle;
       if (saved.presetData) Object.assign(presetData, saved.presetData);
       if (saved.activeMarket) {
         activeMarket = saved.activeMarket;
